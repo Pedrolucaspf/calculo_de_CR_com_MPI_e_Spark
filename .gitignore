@@ -7,5 +7,8 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Log gerado
+mpi_experiment.log
+
 # uv caches/tooling
 .uv/
