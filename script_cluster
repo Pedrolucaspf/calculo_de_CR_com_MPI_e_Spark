@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Nome do arquivo de log
+LOGFILE="mpi_experiment.log"
+
+# Limpa o log anterior, se existir
+> "$LOGFILE"
+
+# Lista de números de processos para testar
+process_counts=(1 2 4 8 16 32 64 128)
+
+# Caminho do arquivo Python
+scripts=("calc_cr_mpi_broadcast.py" "calc_cr_mpi_scatterv.py" "calc_cr_spark.py")
+
+# Caminho do arquivo de hosts
+HOSTFILE="hosts.txt"
+
+# Loop para executar o programa com diferentes números de processos
+for SCRIPT in "${scripts[@]}"
+do
+    echo "SCRIPT: $SCRIPT" | tee -a "$LOGFILE"
+    for n in "${process_counts[@]}"
+    do
+        echo "Execução com $n threads" | tee -a "$LOGFILE"
+        echo "--------------------------" | tee -a "$LOGFILE"
+        
+        # Executa o programa e salva a saída no log
+        if [ "$SCRIPT" = "calc_cr_spark.py" ]; then
+            uv run python calc_cr_spark.py --alunos 200000 --disciplinas 60 -np "$n" | tee /dev/tty | grep "Tempo de processamento" >> "$LOGFILE"
+        else
+            mpirun --oversubscribe -np "$n" --hostfile "$HOSTFILE" uv run "$SCRIPT" --alunos 200000 --disciplinas 60 2>&1 | tee /dev/tty | grep "Tempo de processamento" >> "$LOGFILE"
+        fi
+
+        echo "--------------------------" >> "$LOGFILE"
+        echo "" >> "$LOGFILE"
+    done
+done
+
+echo "Experimentos concluídos. Veja os resultados em $LOGFILE"
+
