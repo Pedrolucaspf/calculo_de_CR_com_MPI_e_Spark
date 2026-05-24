@@ -1,22 +1,25 @@
 # Cálculo de CR com MPI e Spark
 Projeto em que três implementações de algoritmos com paralelismo (duas em MPI e uma em Spark) têm suas performances comparadas entre si.
+
 Os códigos implementam o cálculo do CR (coeficiente de rendimento) da quantidade de alunos que for inserida, os quais cursaram um número igual de disciplinas que também é inserido. A nota e carga horária de cada disciplina são gerados aleatoriamente para cada aluno.
+
 Um script (o arquivo script_cluster) é responsável pela execução das três implementações com diferentes quantidades de processos, salvando os tempos de processamento em um log.
+
 O arquivo analise.py lê este log e calcula as métricas de speedup e eficiência para cada execução em comparação com a serial.
 
 ## Pré-requisitos
 Para rodar este projeto, você precisa ter instalado:
 
--**Python 3.12+**
--**uv**: Pode ser instalado via curl no Linux/WSL:
+- **Python 3.12+**
+- **uv**: Pode ser instalado via curl no Linux/WSL:
   ```bash
   curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
--**OpenMPI** 
+- **OpenMPI** 
   ```bash
   sudo apt install openmpi-bin libopenmpi-dev -y
   ```
--**Java**: Necessário para o funcionamento do Pyspark
+- **Java**: Necessário para o funcionamento do Pyspark
   ```bash
   sudo apt install default-jdk
   ```
