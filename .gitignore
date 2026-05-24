@@ -1,0 +1,11 @@
+# Virtual environment (created by uv)
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# uv caches/tooling
+.uv/
