@@ -4,39 +4,55 @@ Os códigos implementam o cálculo do CR (coeficiente de rendimento) da quantida
 Um script (o arquivo script_cluster) é responsável pela execução das três implementações com diferentes quantidades de processos, salvando os tempos de processamento em um log.
 O arquivo analise.py lê este log e calcula as métricas de speedup e eficiência para cada execução em comparação com a serial.
 
-Pré-requisitos
+## Pré-requisitos
 Para rodar este projeto, você precisa ter instalado:
 
-Python 3.12+
-uv: Pode ser instalado via curl no Linux/WSL:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-OpenMPI 
-sudo apt install openmpi-bin libopenmpi-dev -y
-Java: Necessário para o funcionamento do Pyspark
-sudo apt install default-jdk
+-**Python 3.12+**
+-**uv**: Pode ser instalado via curl no Linux/WSL:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+-**OpenMPI** 
+  ```bash
+  sudo apt install openmpi-bin libopenmpi-dev -y
+  ```
+-**Java**: Necessário para o funcionamento do Pyspark
+  ```bash
+  sudo apt install default-jdk
+  ```
 
+## Instalação das dependências
 
-Instalação das dependências
 Na raiz do projeto, instale as bibliotecas necessárias (Mpi4Py, Numpy e Pyspark) executando:
+ 
+  ```bash
+  uv sync
+  ```
 
-uv sync
-Como executar as implementações
+## Como executar as implementações
+
 O ideal é executar o script_cluster, para que as comparações sejam feitas. Se desejar executá-las individualmente, busque os comandos dentro do próprio script e insira-os na linha de comando. 
 
-1. Dar permissões de acesso ao script
+### 1. Dar permissões de acesso ao script
 Necessário para que ele seja executado.
+  ```bash
+  chmod +x script_cluster
+  ```
+### 2. Escolher a quantidade de alunos e disciplinas (Opcional)
+Abra o script com o comando a seguir e edite o número de alunos e disciplinas que deseja nos parâmetros das execuções dos arquivos. Por padrão, foram escolhidas as quantidades 200.000 (alunos) e 60 (disciplinas). Note que isso deve ser alterado em duas linhas do script, pois o comando da implementação com Spark difere das de MPI. 
+  ```bash
+  nano script_cluster
+  ```
 
-chmod +x script_cluster
-2. Escolha a quantidade de alunos e disciplinas (Opcional)
-Abra o script com o comando a seguir e edite o número de alunos e disciplinas que deseja nos parâmetros das execuções dos arquivos. Por padrão, foram escolhidas as quantidades 200000 (alunos) e 60 (disciplinas). Note que isso deve ser alterado em duas linhas do script, pois o comando da implementação com Spark difere das de MPI. 
-
-nano script_cluster
-3. Execute o script
+### 3. Executar o script
 Ele executará automaticamente cada implementação com 1, 2, 4, 8,...,128 processos, e gerará o arquivo mpi_experiment.log, que guarda os tempos de processamento.  
 
-./script_cluster
-4. Rodar Análise (Opcional)
-Se precisar gerar os gráficos com o matplotlib ou obter relatórios e logs, você pode rodar script de análise:
+  ```bash
+  ./script_cluster
+  ```
 
-uv run python analise.py
-
+### 4. Rodar Análise
+O arquivo de análise imprime na tela uma tabela para cada uma das três implementações. Ela mostra a quantidade de threads, o speedup e a eficiência em cada execução. Ele pode ser executado com o comando a seguir:
+  ```bash
+  uv run python analise.py
+  ```
