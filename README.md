@@ -1,2 +1,42 @@
-# calculo_de_CR_com_MPI_e_Spark
-Projeto em que três implementações (duas em MPI e uma em Spark) têm suas performances comparadas entre si
+# Cálculo de CR com MPI e Spark
+Projeto em que três implementações de algoritmos com paralelismo (duas em MPI e uma em Spark) têm suas performances comparadas entre si.
+Os códigos implementam o cálculo do CR (coeficiente de rendimento) da quantidade de alunos que for inserida, os quais cursaram um número igual de disciplinas que também é inserido. A nota e carga horária de cada disciplina são gerados aleatoriamente para cada aluno.
+Um script (o arquivo script_cluster) é responsável pela execução das três implementações com diferentes quantidades de processos, salvando os tempos de processamento em um log.
+O arquivo analise.py lê este log e calcula as métricas de speedup e eficiência para cada execução em comparação com a serial.
+
+Pré-requisitos
+Para rodar este projeto, você precisa ter instalado:
+
+Python 3.12+
+uv: Pode ser instalado via curl no Linux/WSL:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+OpenMPI 
+sudo apt install openmpi-bin libopenmpi-dev -y
+Java: Necessário para o funcionamento do Pyspark
+sudo apt install default-jdk
+
+
+Instalação das dependências
+Na raiz do projeto, instale as bibliotecas necessárias (Mpi4Py, Numpy e Pyspark) executando:
+
+uv sync
+Como executar as implementações
+O ideal é executar o script_cluster, para que as comparações sejam feitas. Se desejar executá-las individualmente, busque os comandos dentro do próprio script e insira-os na linha de comando. 
+
+1. Dar permissões de acesso ao script
+Necessário para que ele seja executado.
+
+chmod +x script_cluster
+2. Escolha a quantidade de alunos e disciplinas (Opcional)
+Abra o script com o comando a seguir e edite o número de alunos e disciplinas que deseja nos parâmetros das execuções dos arquivos. Por padrão, foram escolhidas as quantidades 200000 (alunos) e 60 (disciplinas). Note que isso deve ser alterado em duas linhas do script, pois o comando da implementação com Spark difere das de MPI. 
+
+nano script_cluster
+3. Execute o script
+Ele executará automaticamente cada implementação com 1, 2, 4, 8,...,128 processos, e gerará o arquivo mpi_experiment.log, que guarda os tempos de processamento.  
+
+./script_cluster
+4. Rodar Análise (Opcional)
+Se precisar gerar os gráficos com o matplotlib ou obter relatórios e logs, você pode rodar script de análise:
+
+uv run python analise.py
+
