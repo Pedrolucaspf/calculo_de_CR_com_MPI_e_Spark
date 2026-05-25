@@ -286,53 +286,46 @@
     </div>
   </div>
 
-  <!-- SLIDE 5: Resultados -->
+  <!-- SLIDE 5: Resultados até 128 -->
   <div class="slide">
-    <h2>Resultados: Speedup e Eficiência</h2>
-    <p>50.000 alunos × 30 disciplinas — 4 scripts MPI × 4 contagens de processo</p>
-    <div style="display:flex; gap:40px; margin-top:32px">
-      <div style="flex:1">
-        <h3 style="color:var(--green)">V0 — Broadcast (baseline)</h3>
-        <table>
-          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
-          <tr><td>1</td><td>4,12s</td><td class="num">1,00</td><td>100%</td></tr>
-          <tr><td>2</td><td>2,64s</td><td class="good">1,56</td><td>78%</td></tr>
-          <tr><td>4</td><td>1,78s</td><td class="good">2,32</td><td>58%</td></tr>
-          <tr><td>8</td><td>1,50s</td><td class="good">2,75</td><td>34%</td></tr>
-        </table>
-      </div>
-      <div style="flex:1">
-        <h3 style="color:var(--amber)">V1 — Broadcast + NumPy 🆕</h3>
-        <table>
-          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
-          <tr><td>1</td><td>7,57s</td><td class="num">1,00</td><td>100%</td></tr>
-          <tr><td>2</td><td>4,41s</td><td class="good">1,72</td><td>86%</td></tr>
-          <tr><td>4</td><td>2,79s</td><td class="good">2,71</td><td>68%</td></tr>
-          <tr><td>8</td><td>2,38s</td><td class="good">3,18</td><td>40%</td></tr>
-        </table>
-      </div>
-    </div>
+    <h2>Resultados: Speedup até 128 Processos</h2>
+    <p style="margin-bottom:8px">50.000 alunos × 30 disciplinas — comparando Broadcast (V0) vs Scatterv (V3)</p>
     <div style="display:flex; gap:40px; margin-top:24px">
       <div style="flex:1">
-        <h3 style="color:var(--red)">V2 — Scatterv + gather 🆕</h3>
-        <table>
+        <h3 style="color:var(--green)">V0 — Broadcast</h3>
+        <p style="font-size:16px; color:var(--muted); margin-bottom:8px">bcast + gather · loops Python · cada processo gera seus dados</p>
+        <table style="font-size:20px">
           <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
-          <tr><td>1</td><td>6,34s</td><td class="num">1,00</td><td>100%</td></tr>
-          <tr><td>2</td><td>6,33s</td><td class="bad">1,00</td><td>50%</td></tr>
-          <tr><td>4</td><td>7,05s</td><td class="bad">0,90</td><td>23%</td></tr>
-          <tr><td>8</td><td>6,95s</td><td class="bad">0,91</td><td>11%</td></tr>
+          <tr><td>1</td><td>4,17s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>2,80s</td><td class="good">1,49</td><td>75%</td></tr>
+          <tr><td>4</td><td>1,50s</td><td class="good">2,78</td><td>70%</td></tr>
+          <tr><td>8</td><td>1,45s</td><td class="good">2,88</td><td>36%</td></tr>
+          <tr><td>16</td><td>1,10s</td><td class="good">3,79</td><td>24%</td></tr>
+          <tr><td>32</td><td>1,35s</td><td class="good">3,09</td><td>10%</td></tr>
+          <tr style="background:rgba(34,197,94,0.08)"><td><strong>64</strong></td><td><strong style="color:var(--green)">1,00s</strong></td><td class="good"><strong>4,17</strong></td><td>7%</td></tr>
+          <tr><td>128</td><td>1,03s</td><td class="good">4,05</td><td>3%</td></tr>
         </table>
+        <p style="margin-top:12px; font-size:20px; color:var(--green)">✅ Escala bem até 64 processos (4,2×)</p>
       </div>
       <div style="flex:1">
-        <h3 style="color:var(--purple)">V3 — Scatterv + Gatherv</h3>
-        <table>
+        <h3 style="color:var(--red)">V3 — Scatterv + Gatherv</h3>
+        <p style="font-size:16px; color:var(--muted); margin-bottom:8px">bcast + Scatterv + Gatherv · NumPy · raiz gera tudo</p>
+        <table style="font-size:20px">
           <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
-          <tr><td>1</td><td>6,95s</td><td class="num">1,00</td><td>100%</td></tr>
-          <tr><td>2</td><td>6,69s</td><td class="bad">1,04</td><td>52%</td></tr>
-          <tr><td>4</td><td>6,74s</td><td class="bad">1,03</td><td>26%</td></tr>
-          <tr><td>8</td><td>6,49s</td><td class="bad">1,07</td><td>13%</td></tr>
+          <tr><td>1</td><td>6,83s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>6,69s</td><td class="bad">1,02</td><td>51%</td></tr>
+          <tr><td>4</td><td>10,79s</td><td class="bad">0,63</td><td>16%</td></tr>
+          <tr><td>8</td><td>6,81s</td><td class="bad">1,00</td><td>13%</td></tr>
+          <tr><td>16</td><td>7,28s</td><td class="bad">0,94</td><td>6%</td></tr>
+          <tr><td>32</td><td>15,15s</td><td class="bad">0,45</td><td>1%</td></tr>
+          <tr><td>64</td><td>11,29s</td><td class="bad">0,61</td><td>1%</td></tr>
+          <tr style="background:rgba(239,68,68,0.08)"><td><strong>128</strong></td><td><strong style="color:var(--red)">35,91s</strong></td><td class="bad"><strong>0,19</strong></td><td>0%</td></tr>
         </table>
+        <p style="margin-top:12px; font-size:20px; color:var(--red)">❌ Com 128 procs é 5× mais lento que com 1</p>
       </div>
+    </div>
+    <div class="highlight" style="margin-top:28px">
+      <p><strong style="color:var(--green)">V0:</strong> pico em 64 processos (4,2×). Depois degrada por oversubscription. &nbsp;|&nbsp; <strong style="color:var(--red)">V3:</strong> interrompido em 128 — quanto mais processos, <strong>pior</strong> o desempenho. Gargalo serial da geração centralizada + explosão da comunicação coletiva.</p>
     </div>
     <div class="slide-footer">
       <div class="dots"></div>
@@ -411,13 +404,13 @@ list_cr = rdd.<span class="func">map</span>(calc_cr).<span class="func">collect<
     <div class="card-row">
       <div class="card" style="border-color:var(--green)">
         <h3 style="color:var(--green)">Melhor Speedup</h3>
-        <div class="big-num green" style="font-size:64px">3,2×</div>
-        <p>V1 (NumPy + broadcast) com 8 processos — escalou bem porque paralelizou geração + cálculo.</p>
+        <div class="big-num green" style="font-size:64px">4,2×</div>
+        <p>V0 (Broadcast) com 64 processos — escalou de 4,17s para 1,00s. Depois estabilizou.</p>
       </div>
       <div class="card" style="border-color:var(--red)">
         <h3 style="color:var(--red)">Pior Caso</h3>
-        <div class="big-num red" style="font-size:64px">0,9×</div>
-        <p>V2/V3 (Scatterv) com 4+ processos — mais lento que serial. Gargalo na geração centralizada.</p>
+        <div class="big-num red" style="font-size:64px">0,19×</div>
+        <p>V3 (Scatterv) com 128 processos: 5× mais lento que serial. Comunicação coletiva explodiu.</p>
       </div>
       <div class="card" style="border-color:var(--accent)">
         <h3 style="color:var(--accent)">Primitivas</h3>
