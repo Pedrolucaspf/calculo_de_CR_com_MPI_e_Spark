@@ -1,9 +1,27 @@
 # Cálculo de CR com MPI e Spark
-Projeto em que três implementações de algoritmos com paralelismo (duas em MPI e uma em Spark) têm suas performances comparadas entre si.
+Projeto em que cinco implementações de algoritmos com paralelismo (quatro em MPI e uma em Spark) têm suas performances comparadas entre si.
 
 Os códigos implementam o cálculo do CR (coeficiente de rendimento) da quantidade de alunos que for inserida, os quais cursaram um número igual de disciplinas que também é inserido. A nota e carga horária de cada disciplina são gerados aleatoriamente para cada aluno.
 
-Um script (o arquivo script_cluster) é responsável pela execução das três implementações com diferentes quantidades de processos, salvando os tempos de processamento em um log.
+## Pipeline de Otimizações
+
+As versões MPI demonstram **3 alterações incrementais** com impacto no desempenho:
+
+| Versão | Arquivo | Estratégia | Primitivas |
+|---|---|---|---|
+| **V0** | `calc_cr_mpi_broadcast.py` | Linha de base: `random`, loops Python, `gather` | `bcast` + `gather` |
+| **V1** | `calc_cr_mpi_broadcast_numpy.py` | Alteração 1: NumPy vetorizado | `bcast` + `gather` |
+| **V2** | `calc_cr_mpi_scatterv_gather.py` | Alteração 2: Geração centralizada + `Scatterv` | `bcast` + `Scatterv` + `gather` |
+| **V3** | `calc_cr_mpi_scatterv.py` | Alteração 3: `Gatherv` binário | `bcast` + `Scatterv` + `Gatherv` |
+| Spark | `calc_cr_spark.py` | RDD com `parallelize` + `map` | — |
+
+### As 3 Alterações
+
+1. **Loops Python → NumPy vetorizado** (V0→V1): Substitui `for j in range(num_disc)` por `np.sum(array_notas * array_horas)`, executando o cálculo em C compilado ao invés do interpretador Python.
+2. **Geração distribuída → centralizada com Scatterv** (V1→V2): Apenas o processo raiz gera os dados, eliminando trabalho redundante. Os arrays são distribuídos via `Scatterv`, que permite tamanhos diferentes por processo.
+3. **`gather` (pickle) → `Gatherv` binário** (V2→V3): Substitui a serialização pickle do Python por `MPI.DOUBLE` direto, eliminando overhead de serialização.
+
+Um script (o arquivo script_cluster) é responsável pela execução das cinco implementações com diferentes quantidades de processos, salvando os tempos de processamento em um log.
 
 O arquivo analise.py lê este log e calcula as métricas de speedup e eficiência para cada execução em comparação com a serial.
 
