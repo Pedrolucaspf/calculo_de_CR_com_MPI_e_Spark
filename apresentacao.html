@@ -325,7 +325,8 @@
       </div>
     </div>
     <div class="highlight" style="margin-top:28px">
-      <p><strong style="color:var(--green)">V0:</strong> pico em 64 processos (4,2×). Depois degrada por oversubscription. &nbsp;|&nbsp; <strong style="color:var(--red)">V3:</strong> interrompido em 128 — quanto mais processos, <strong>pior</strong> o desempenho. Gargalo serial da geração centralizada + explosão da comunicação coletiva.</p>
+      <p><strong style="color:var(--green)">V0:</strong> pico em 64 processos (4,2×). &nbsp; <strong style="color:var(--amber)">V1 (NumPy):</strong> pico em 16 processos (3,9×). &nbsp;|&nbsp; <strong style="color:var(--red)">V3:</strong> colapso em 128 (0,19×). &nbsp; <strong style="color:var(--purple)">V2 (gather):</strong> pior ainda em 128 (0,14× — 46s).</p>
+      <p style="margin-top:8px; font-size:18px; color:var(--muted)"><strong>Padrão claro:</strong> o que define a escalabilidade é a <strong style="color:var(--text)">estratégia</strong> (broadcast vs Scatterv), não as otimizações internas (NumPy, Gatherv). Broadcast escala; Scatterv colapsa.</p>
     </div>
     <div class="slide-footer">
       <div class="dots"></div>
