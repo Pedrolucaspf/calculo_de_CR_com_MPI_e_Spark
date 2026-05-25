@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cálculo de CR com MPI e Spark</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --border: #1e293b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #020617;
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+  }
+  .deck {
+    width: 1920px; height: 1080px;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 80px 120px;
+  }
+  .slide.active { display: flex; }
+
+  /* Typography */
+  h1 { font-size: 64px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 24px; }
+  h2 { font-size: 42px; font-weight: 600; line-height: 1.2; margin-bottom: 20px; color: var(--text); }
+  h3 { font-size: 28px; font-weight: 600; color: var(--accent); margin-bottom: 16px; }
+  p, li { font-size: 26px; line-height: 1.55; color: var(--muted); }
+  .subtitle { font-size: 32px; color: var(--muted); font-weight: 400; }
+  .tag { display: inline-block; background: rgba(59,130,246,0.15); color: var(--accent); padding: 6px 18px; border-radius: 20px; font-size: 20px; font-weight: 600; margin-right: 12px; }
+
+  /* Slide 1 - Title */
+  .slide-title { justify-content: center; align-items: flex-start; }
+  .slide-title h1 { font-size: 72px; background: linear-gradient(135deg, var(--accent), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .slide-title .meta { margin-top: 40px; display: flex; gap: 32px; }
+  .slide-title .meta span { font-size: 22px; color: var(--muted); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 23px; margin-top: 24px; }
+  th { text-align: left; padding: 16px 20px; background: var(--surface); color: var(--muted); font-weight: 600; font-size: 20px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+  td { padding: 16px 20px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+  tr:hover td { background: rgba(59,130,246,0.04); }
+  .num { font-weight: 600; color: var(--text); }
+  .good { color: var(--green); font-weight: 600; }
+  .warn { color: var(--amber); font-weight: 600; }
+  .bad { color: var(--red); font-weight: 600; }
+
+  /* Code */
+  code { font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: 20px; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; font-size: 20px; line-height: 1.6; overflow-x: auto; margin-top: 20px; }
+  .keyword { color: var(--purple); }
+  .func { color: var(--cyan); }
+  .string { color: var(--green); }
+  .comment { color: #64748b; }
+  .diff-add { color: var(--green); }
+  .diff-rem { color: var(--red); }
+
+  /* Cards */
+  .card-row { display: flex; gap: 24px; margin-top: 32px; }
+  .card { flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; }
+  .card h3 { font-size: 26px; margin-bottom: 12px; }
+  .card p { font-size: 21px; }
+  .card .arrow { font-size: 28px; color: var(--accent); margin: 12px 0; }
+
+  /* Timeline */
+  .timeline { display: flex; gap: 32px; margin-top: 48px; }
+  .step { flex:1; position: relative; }
+  .step-num { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+  .step:nth-child(1) .step-num { background: rgba(239,68,68,0.2); color: var(--red); }
+  .step:nth-child(2) .step-num { background: rgba(245,158,11,0.2); color: var(--amber); }
+  .step:nth-child(3) .step-num { background: rgba(34,197,94,0.2); color: var(--green); }
+  .step h3 { font-size: 24px; margin-bottom: 8px; }
+  .step p { font-size: 19px; }
+
+  /* Diagram */
+  .diagram { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 40px; }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px 32px; text-align: center; font-size: 22px; min-width: 160px; }
+  .box.accent { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+  .box.green { border-color: var(--green); background: rgba(34,197,94,0.08); }
+  .arrow-label { font-size: 16px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+  /* Big number */
+  .big-num { font-size: 96px; font-weight: 800; line-height: 1; }
+  .big-num.accent { color: var(--accent); }
+  .big-num.green { color: var(--green); }
+  .big-num.red { color: var(--red); }
+
+  /* Progress bar */
+  .bar-row { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+  .bar-label { font-size: 20px; width: 160px; text-align: right; color: var(--muted); }
+  .bar-track { flex:1; height: 32px; background: var(--surface); border-radius: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 16px; font-size: 18px; font-weight: 600; }
+  .bar-fill.good { background: var(--green); width: 100%; }
+  .bar-fill.warn { background: var(--amber); width: 100%; }
+
+  /* Footer */
+  .slide-footer { position: absolute; bottom: 32px; left: 120px; right: 120px; display: flex; justify-content: space-between; align-items: center; }
+  .page-num { font-size: 18px; color: var(--muted); }
+  .nav-hint { font-size: 16px; color: #475569; }
+
+  /* Navigation dots */
+  .dots { display: flex; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+  .dot.active { background: var(--accent); }
+
+  /* Highlight box */
+  .highlight { background: rgba(59,130,246,0.08); border-left: 4px solid var(--accent); padding: 24px 32px; border-radius: 0 12px 12px 0; margin-top: 32px; }
+  .highlight p { font-size: 24px; color: var(--text); }
+
+  /* Comparison grid for V0-V3 */
+  .pipeline { display: flex; gap: 20px; margin-top: 40px; }
+  .pipe-step { flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; text-align: center; position: relative; }
+  .pipe-step .ver { font-size: 18px; color: var(--muted); margin-bottom: 8px; }
+  .pipe-step .name { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  .pipe-step .change { font-size: 16px; color: var(--accent); }
+  .pipe-arrow { display: flex; align-items: center; font-size: 28px; color: var(--muted); }
+
+  /* 2-column layout */
+  .two-col { display: flex; gap: 60px; margin-top: 32px; }
+  .col { flex:1; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Título -->
+  <div class="slide slide-title active">
+    <div style="margin-bottom:16px"><span class="tag">MPI</span><span class="tag">Spark</span><span class="tag">Paralelismo</span></div>
+    <h1>Cálculo de CR com<br>MPI e Spark</h1>
+    <p class="subtitle">Comparação de desempenho com 3 otimizações incrementais</p>
+    <div class="meta">
+      <span>Frederico Paiva</span>
+      <span>•</span>
+      <span>UFF — Ciência da Computação</span>
+      <span>•</span>
+      <span>2025</span>
+    </div>
+    <div class="slide-footer">
+      <div class="dots" id="dots"></div>
+      <span class="page-num">1 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: O Problema -->
+  <div class="slide">
+    <h2>O Problema</h2>
+    <div class="two-col">
+      <div class="col">
+        <h3>Coeficiente de Rendimento</h3>
+        <p style="margin-bottom:32px">Média ponderada das notas de <strong style="color:var(--text)">N alunos</strong> cursando <strong style="color:var(--text)">M disciplinas</strong> cada.</p>
+        <div class="highlight">
+          <p><strong>CR</strong> = Σ(nota × carga_horária) / Σ(carga_horária)</p>
+        </div>
+        <p style="margin-top:32px; font-size:22px">Notas e cargas horárias geradas aleatoriamente.<br>Foco na <strong style="color:var(--text)">comparação de desempenho paralelo</strong>, não nos dados.</p>
+      </div>
+      <div class="col">
+        <div style="text-align:center">
+          <div class="big-num accent">200K</div>
+          <p style="margin-top:8px">alunos</p>
+          <div style="margin:24px 0; color:var(--muted); font-size:28px">×</div>
+          <div class="big-num" style="color:var(--cyan)">60</div>
+          <p style="margin-top:8px">disciplinas</p>
+          <div style="margin:24px 0; color:var(--muted); font-size:28px">=</div>
+          <div class="big-num green">12M</div>
+          <p style="margin-top:8px">notas geradas</p>
+        </div>
+        <p style="margin-top:32px; font-size:20px; text-align:center; color:var(--green)">✓ <i>Embarrassingly parallel</i> — cada aluno é independente</p>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">2 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: As 3 Otimizações -->
+  <div class="slide">
+    <h2>As 3 Otimizações Incrementais</h2>
+    <p style="margin-bottom:40px">Cada versão isola o impacto de <strong style="color:var(--text)">uma</strong> mudança no desempenho.</p>
+    <div class="pipeline">
+      <div class="pipe-step" style="border-color:var(--red)">
+        <div class="ver">V0</div>
+        <div class="name">Broadcast</div>
+        <div style="font-size:15px; color:var(--muted); margin-bottom:8px">Linha de base</div>
+        <div style="font-size:16px; color:var(--muted)"><code>random</code> + loops Python<br><code>bcast</code> + <code>gather</code></div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-color:var(--amber)">
+        <div class="ver">V1 🆕</div>
+        <div class="name">+ NumPy</div>
+        <div class="change">Alteração 1</div>
+        <div style="font-size:16px; color:var(--muted); margin-top:8px"><code>np.sum()</code> vetorizado<br>substitui loops Python</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-color:var(--accent)">
+        <div class="ver">V2 🆕</div>
+        <div class="name">+ Scatterv</div>
+        <div class="change">Alteração 2</div>
+        <div style="font-size:16px; color:var(--muted); margin-top:8px">Geração centralizada<br>distribuição via <code>Scatterv</code></div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-color:var(--green)">
+        <div class="ver">V3</div>
+        <div class="name">+ Gatherv</div>
+        <div class="change">Alteração 3</div>
+        <div style="font-size:16px; color:var(--muted); margin-top:8px">Coleta binária <code>MPI.DOUBLE</code><br>sem overhead do pickle</div>
+      </div>
+    </div>
+    <div style="margin-top:60px">
+      <table>
+        <tr><th>Alteração</th><th>O que mudou</th><th>De → Para</th></tr>
+        <tr><td><strong>1.</strong> NumPy vetorizado</td><td>Cálculo em C compilado, não Python interpretado</td><td><code>for j in range</code> → <code>np.sum(a*h)</code></td></tr>
+        <tr><td><strong>2.</strong> Scatterv</td><td>Elimina geração redundante nos workers</td><td>Cada um gera → Raiz gera + distribui</td></tr>
+        <tr><td><strong>3.</strong> Gatherv binário</td><td>Serialização direta, sem pickle</td><td><code>gather</code> → <code>Gatherv</code></td></tr>
+      </table>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">3 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Primitivas Coletivas -->
+  <div class="slide">
+    <h2>Primitivas Coletivas</h2>
+    <p style="margin-bottom:36px">O trabalho exige <strong style="color:var(--text)">pelo menos 2</strong>. Usamos <strong style="color:var(--green)">3</strong> na versão otimizada.</p>
+    <div class="card-row">
+      <div class="card">
+        <h3 style="color:var(--purple)">bcast</h3>
+        <p>Transmite parâmetros do raiz para todos os processos.</p>
+        <pre><span class="comment"># 2 inteiros para todos os workers</span>
+<span class="func">comm.bcast</span>(num_alunos, root=0)
+<span class="func">comm.bcast</span>(num_disc, root=0)</pre>
+        <p style="font-size:18px; margin-top:12px">Dados trafegados: ~8 bytes</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--accent)">Scatterv</h3>
+        <p>Distribui pedaços de tamanhos diferentes dos arrays.</p>
+        <pre><span class="comment"># 12M floats → pedaços por worker</span>
+<span class="func">comm.Scatterv</span>([notas, sendcounts,
+   displacements, MPI.DOUBLE],
+   array_notas, root=0)</pre>
+        <p style="font-size:18px; margin-top:12px">Dados trafegados: ~96 MB total</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--green)">Gatherv</h3>
+        <p>Coleta resultados parciais de volta ao raiz.</p>
+        <pre><span class="comment"># CRs calculados → raiz</span>
+<span class="func">comm.Gatherv</span>(local_cr,
+   [array_cr, recvcounts,
+    displacements, MPI.DOUBLE],
+   root=0)</pre>
+        <p style="font-size:18px; margin-top:12px">Dados trafegados: ~800 KB</p>
+      </div>
+    </div>
+    <div class="highlight" style="margin-top:36px">
+      <p>V1 usa <strong>bcast</strong> + <strong>gather</strong> (2 primitivas) &nbsp;|&nbsp; V2/V3 usam <strong>bcast</strong> + <strong>Scatterv</strong> + <strong>gather/Gatherv</strong> (3 primitivas)</p>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">4 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Resultados -->
+  <div class="slide">
+    <h2>Resultados: Speedup e Eficiência</h2>
+    <p>50.000 alunos × 30 disciplinas — 4 scripts MPI × 4 contagens de processo</p>
+    <div style="display:flex; gap:40px; margin-top:32px">
+      <div style="flex:1">
+        <h3 style="color:var(--green)">V0 — Broadcast (baseline)</h3>
+        <table>
+          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
+          <tr><td>1</td><td>4,12s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>2,64s</td><td class="good">1,56</td><td>78%</td></tr>
+          <tr><td>4</td><td>1,78s</td><td class="good">2,32</td><td>58%</td></tr>
+          <tr><td>8</td><td>1,50s</td><td class="good">2,75</td><td>34%</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <h3 style="color:var(--amber)">V1 — Broadcast + NumPy 🆕</h3>
+        <table>
+          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
+          <tr><td>1</td><td>7,57s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>4,41s</td><td class="good">1,72</td><td>86%</td></tr>
+          <tr><td>4</td><td>2,79s</td><td class="good">2,71</td><td>68%</td></tr>
+          <tr><td>8</td><td>2,38s</td><td class="good">3,18</td><td>40%</td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex; gap:40px; margin-top:24px">
+      <div style="flex:1">
+        <h3 style="color:var(--red)">V2 — Scatterv + gather 🆕</h3>
+        <table>
+          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
+          <tr><td>1</td><td>6,34s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>6,33s</td><td class="bad">1,00</td><td>50%</td></tr>
+          <tr><td>4</td><td>7,05s</td><td class="bad">0,90</td><td>23%</td></tr>
+          <tr><td>8</td><td>6,95s</td><td class="bad">0,91</td><td>11%</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <h3 style="color:var(--purple)">V3 — Scatterv + Gatherv</h3>
+        <table>
+          <tr><th>Procs</th><th>Tempo</th><th>Speedup</th><th>Efic.</th></tr>
+          <tr><td>1</td><td>6,95s</td><td class="num">1,00</td><td>100%</td></tr>
+          <tr><td>2</td><td>6,69s</td><td class="bad">1,04</td><td>52%</td></tr>
+          <tr><td>4</td><td>6,74s</td><td class="bad">1,03</td><td>26%</td></tr>
+          <tr><td>8</td><td>6,49s</td><td class="bad">1,07</td><td>13%</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">5 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Por quê? -->
+  <div class="slide">
+    <h2>Por que o Scatterv não escalou?</h2>
+    <p style="font-size:28px; color:var(--accent); margin-bottom:40px">Lei de Amdahl: o speedup é limitado pela fração serial do programa.</p>
+    <div class="two-col">
+      <div class="col">
+        <h3 style="color:var(--green)">Broadcast (V0/V1)</h3>
+        <div style="margin-top:24px">
+          <div class="bar-row"><span class="bar-label">Geração dados</span><div class="bar-track"><div class="bar-fill good">Paralelo ✓</div></div></div>
+          <div class="bar-row"><span class="bar-label">Cálculo CR</span><div class="bar-track"><div class="bar-fill good">Paralelo ✓</div></div></div>
+          <div class="bar-row"><span class="bar-label">Comunicação</span><div class="bar-track"><div class="bar-fill good" style="width:8%">~0s</div></div></div>
+        </div>
+        <p style="margin-top:24px; font-size:22px"><strong style="color:var(--green)">~100% paralelizável.</strong> Cada processo gera e calcula independente. Broadcast só envia 2 inteiros.</p>
+      </div>
+      <div class="col">
+        <h3 style="color:var(--red)">Scatterv (V2/V3)</h3>
+        <div style="margin-top:24px">
+          <div class="bar-row"><span class="bar-label">Geração dados</span><div class="bar-track"><div class="bar-fill warn" style="background:var(--red)">Serial ✗ — 6s</div></div></div>
+          <div class="bar-row"><span class="bar-label">Cálculo CR</span><div class="bar-track"><div class="bar-fill good">Paralelo ✓</div></div></div>
+          <div class="bar-row"><span class="bar-label">Comunicação</span><div class="bar-track"><div class="bar-fill good" style="width:15%">~1s</div></div></div>
+        </div>
+        <p style="margin-top:24px; font-size:22px"><strong style="color:var(--red)">Gargalo serial de 6 segundos.</strong> O raiz gera 1,5M floats sozinho. Workers recebem e calculam em milissegundos. A parte serial domina.</p>
+      </div>
+    </div>
+    <div class="highlight" style="margin-top:36px">
+      <p><strong>Lição:</strong> Paralelismo só compensa quando a fração paralelizável é grande e a comunicação é barata. Adicionar processos a uma tarefa com gargalo serial <strong>piora</strong> o desempenho (overhead de coordenação).</p>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">6 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Spark -->
+  <div class="slide">
+    <h2>Spark: Abstração de Distribuição</h2>
+    <div class="two-col">
+      <div class="col">
+        <h3>Código</h3>
+        <pre><span class="comment"># Cria RDD com índices dos alunos</span>
+alunos = np.arange(num_alunos)
+rdd = sc.<span class="func">parallelize</span>(alunos, PARTICOES)
+
+<span class="comment"># Aplica calc_cr em paralelo</span>
+list_cr = rdd.<span class="func">map</span>(calc_cr).<span class="func">collect</span>()</pre>
+        <p style="margin-top:20px; font-size:20px">Spark abstrai completamente a distribuição:<br>sem <code>bcast</code>, sem <code>Scatterv</code>, sem <code>sendcounts</code>.</p>
+      </div>
+      <div class="col">
+        <h3>Comparação MPI vs Spark</h3>
+        <table style="font-size:20px">
+          <tr><th></th><th>MPI</th><th>Spark</th></tr>
+          <tr><td>Controle</td><td>Manual (divisão, envio)</td><td>Automático (framework)</td></tr>
+          <tr><td>Código</td><td>~150 linhas</td><td>~100 linhas</td></tr>
+          <tr><td>Overhead</td><td>Baixo (C/nativo)</td><td>Alto (JVM + serialização)</td></tr>
+          <tr><td>Primitivas</td><td>bcast, Scatterv, Gatherv</td><td>parallelize, map, collect</td></tr>
+          <tr><td>Ideal para</td><td>HPC, baixa latência</td><td>Big data, tolerância a falhas</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">7 / 8</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Conclusão -->
+  <div class="slide">
+    <h2>Conclusão</h2>
+    <div class="card-row">
+      <div class="card" style="border-color:var(--green)">
+        <h3 style="color:var(--green)">Melhor Speedup</h3>
+        <div class="big-num green" style="font-size:64px">3,2×</div>
+        <p>V1 (NumPy + broadcast) com 8 processos — escalou bem porque paralelizou geração + cálculo.</p>
+      </div>
+      <div class="card" style="border-color:var(--red)">
+        <h3 style="color:var(--red)">Pior Caso</h3>
+        <div class="big-num red" style="font-size:64px">0,9×</div>
+        <p>V2/V3 (Scatterv) com 4+ processos — mais lento que serial. Gargalo na geração centralizada.</p>
+      </div>
+      <div class="card" style="border-color:var(--accent)">
+        <h3 style="color:var(--accent)">Primitivas</h3>
+        <div style="font-size:48px; margin:16px 0">3</div>
+        <p>bcast + Scatterv + Gatherv na V3. Acima do mínimo exigido de 2 primitivas coletivas.</p>
+      </div>
+    </div>
+    <div class="highlight" style="margin-top:48px">
+      <p><strong>Principal lição:</strong> Nem toda paralelização traz ganho. É preciso entender <strong style="color:var(--accent)">onde está o gargalo</strong> antes de decidir a estratégia. A Lei de Amdahl explica por que o Scatterv — apesar de usar primitivas mais sofisticadas — teve desempenho pior que o broadcast simples.</p>
+    </div>
+    <div class="slide-footer">
+      <div class="dots"></div>
+      <span class="page-num">8 / 8</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const deck = document.getElementById('deck');
+const slides = deck.querySelectorAll('.slide');
+let current = 0;
+
+function show(n) {
+  slides[current].classList.remove('active');
+  current = (n + slides.length) % slides.length;
+  slides[current].classList.add('active');
+  updateDots();
+  localStorage.setItem('apresentacao-cr-slide', current);
+}
+
+function updateDots() {
+  document.querySelectorAll('.dots').forEach(d => {
+    d.innerHTML = Array.from(slides, (_, i) =>
+      `<div class="dot${i === current ? ' active' : ''}"></div>`
+    ).join('');
+  });
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); show(current - 1); }
+  if (e.key === 'Home') { e.preventDefault(); show(0); }
+  if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+});
+
+// Scaling
+function resize() {
+  const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  deck.style.setProperty('--scale', scale);
+  deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Init
+show(parseInt(localStorage.getItem('apresentacao-cr-slide')) || 0);
+updateDots();
+</script>
+</body>
+</html>
