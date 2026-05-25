@@ -9,7 +9,7 @@ def main():
         process = "Tempo de processamento"
 
         with open('mpi_experiment.log', 'r') as file:
-            for _ in range(3):
+            for _ in range(5):
                 list_threads = []
                 list_tempos = []
                 proc_count = 0
