@@ -10,7 +10,7 @@ LOGFILE="mpi_experiment.log"
 process_counts=(1 2 4 8 16 32 64 128)
 
 # Caminho do arquivo Python
-scripts=("calc_cr_mpi_broadcast.py" "calc_cr_mpi_scatterv.py" "calc_cr_spark.py")
+scripts=("calc_cr_mpi_broadcast.py" "calc_cr_mpi_broadcast_numpy.py" "calc_cr_mpi_scatterv_gather.py" "calc_cr_mpi_scatterv.py" "calc_cr_spark.py")
 
 # Caminho do arquivo de hosts
 HOSTFILE="hosts.txt"
