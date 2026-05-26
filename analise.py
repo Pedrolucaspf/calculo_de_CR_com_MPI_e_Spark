@@ -1,6 +1,12 @@
+TEMPO_LIMITE = 60.0         # timeout em segundos — acima disso é inválido
+SPEEDUP_INVALIDO = -1.0    # marcador para execuções que estouraram o tempo
+TOTAL_SCRIPTS = 5          # número de scripts no log (V0, V1, V2, V3, Spark)
+EXECUCOES_POR_SCRIPT = 8   # 1, 2, 4, 8, 16, 32, 64, 128 processos
+SEPARADOR = "------------------------------"
+
 def main():
     print("Lendo o arquivo mpi_experiment.log.")
-    print("-----------------------------------")
+    print(SEPARADOR)
     print("")
 
     try:
@@ -9,12 +15,12 @@ def main():
         process = "Tempo de processamento"
 
         with open('mpi_experiment.log', 'r') as file:
-            for _ in range(3):
+            for _ in range(TOTAL_SCRIPTS):
                 list_threads = []
                 list_tempos = []
                 proc_count = 0
                 for line in file:
-                    if proc_count == 8:
+                    if proc_count == EXECUCOES_POR_SCRIPT:
                         break
 
                     if script in line:
@@ -44,9 +50,9 @@ def main():
                 list_speedups = []
                 list_eficiencias = []
                 for i in range(len(list_tempos)):
-                    if(list_tempos[i] >= 60.0):
-                        list_speedups.append(-1.0)
-                        list_eficiencias.append(-1.0)
+                    if list_tempos[i] >= TEMPO_LIMITE:
+                        list_speedups.append(SPEEDUP_INVALIDO)
+                        list_eficiencias.append(SPEEDUP_INVALIDO)
                     else:
                         list_speedups.append(round((list_tempos[0] / list_tempos[i]), 1))
                         list_eficiencias.append(round((list_speedups[i] / list_threads[i]), 1))
@@ -70,19 +76,19 @@ def main():
 
                 print(f"|   Speedup  |", end ="")
                 for num in list_speedups:
-                    if(num <= -0.1):
+                    if num <= (SPEEDUP_INVALIDO + 0.1):
                         print(f"|   -   |", end="")
                     else:
                         print(f"|  {num}  |", end="")
                 print("")
                 print(f"| Eficiência |", end="")
                 for num in list_eficiencias:
-                    if(num <= -0.1):
+                    if num <= (SPEEDUP_INVALIDO + 0.1):
                         print(f"|   -   |", end="")
                     else:
                         print(f"|  {num}  |", end="")
                 print("")
-                print("------------------------------")
+                print(SEPARADOR)
 
     except FileNotFoundError:
         print(
